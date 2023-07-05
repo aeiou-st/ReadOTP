@@ -7,6 +7,8 @@ import android.os.Bundle;
 import android.telephony.SmsMessage;
 import android.util.Log;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -17,16 +19,20 @@ public class SMSReceiver extends BroadcastReceiver {
         this.mainActivity = mainActivity;
     }
 
+    public void removeMainActivity() {
+        this.mainActivity = null;
+    }
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        Log.d("BackgroundService", "SMSReceiver recevied");
+        Log.d("BackgroundService", "SMSReceiver received");
 
         if (intent.getAction().equals("android.provider.Telephony.SMS_RECEIVED")) {
             Bundle bundle = intent.getExtras();
             if (bundle != null) {
                 Object[] pdus = (Object[]) bundle.get("pdus");
                 if (pdus != null) {
+                    List<String> otpList = new ArrayList<>();
                     for (Object pdu : pdus) {
                         SmsMessage smsMessage = SmsMessage.createFromPdu((byte[]) pdu);
                         Log.d("BackgroundService", "SMSReceiver recevied SMS message" + smsMessage);
@@ -35,54 +41,31 @@ public class SMSReceiver extends BroadcastReceiver {
                         Log.d("BackgroundService", "SMSReceiver recevied SMS" + message);
 
                         // Process the message and extract the OTP
-                        String otp = extractOTP(message);
-                        Log.d("BackgroundService", "SMSReceiver recevied AFTER EXTRACT" + otp);
+                        otpList.addAll(extractOTP(message));
+                    }
 
-
-                        if (otp != null && !otp.isEmpty() && mainActivity != null) {
-                            mainActivity.runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    Log.d("BackgroundService", "SMSReceiver recevied" + otp);
-                                    mainActivity.displayOTP(otp);
-                                    Log.d("BackgroundService", "SMSReceiver recevied" + otp);
-
-                                }
-                            });
-                        }
+                    if (!otpList.isEmpty() && mainActivity != null) {
+                        mainActivity.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                mainActivity.displayOTPList(otpList);
+                            }
+                        });
                     }
                 }
             }
         }
     }
 
-    private void displayOTP(String otp) {
-        if (mainActivity != null) {
-            mainActivity.displayOTP(otp);
-        }
-    }
-
-    private String extractOTP(String message) {
-        // Implement your logic to extract the OTP from the message
-        // This can be done using regular expressions or other techniques
-        // Return the extracted OTP as a string
-        // In this example, we assume the OTP is a 6-digit number
-        Log.d("BackgroundService", "SMSReceiver recevied Extract OTP " + message);
-
-        String otp = null;
+    private List<String> extractOTP(String message) {
+        List<String> otpList = new ArrayList<>();
         Pattern pattern = Pattern.compile("\\b\\d{6}\\b");
         Matcher matcher = pattern.matcher(message);
-        if (matcher.find()) {
-            Log.d("BackgroundService", "SMSReceiver recevied Extract matcher " + matcher);
-
-            otp = matcher.group();
+        while (matcher.find()) {
+            String otp = matcher.group();
             Log.d("BackgroundService", "SMSReceiver recevied Extract OTP " + otp);
-        }else {
-            Log.d("BackgroundService", "SMSReceiver recevied Extract ELSE " + otp);
-
+            otpList.add(otp);
         }
-        Log.d("BackgroundService", "SMSReceiver recevied Extract OTP RETURN " + otp);
-
-        return otp;
+        return otpList;
     }
 }
