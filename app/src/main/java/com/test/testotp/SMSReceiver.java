@@ -86,25 +86,28 @@ public class SMSReceiver extends BroadcastReceiver {
 
         MyApiService apiService = retrofit.create(MyApiService.class);
 
-        Call<Void> call = apiService.makeApiCall(otp);
-        call.enqueue(new Callback<Void>() {
+        Call<ApiResponse> call = apiService.makeApiCall("getOtp", otp);
+        call.enqueue(new Callback<ApiResponse>() {
             @Override
-            public void onResponse(Call<Void> call, Response<Void> response) {
+            public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
                 if (response.isSuccessful()) {
-                    // API call was successful
-                    Log.d("BackgroundService", "API call was successful response" + response);
+                    ApiResponse apiResponse = response.body();
+                    Log.d("BackgroundService", "API call was successful response" + apiResponse.getMessage());
+                    Log.d("BackgroundService", "API call was successful response gg" + response.body());
 
                     Log.d("BackgroundService", "API call was successful" + otp);
 
+                    // Access the response data
+                    String status = apiResponse.getStatus();
+                    String message = apiResponse.getMessage();
+                    // Process the response data
                 } else {
-                    // Handle API error
-                    Log.d("BackgroundService", "API error");
-
+                    // API call failed
                 }
             }
 
             @Override
-            public void onFailure(Call<Void> call, Throwable t) {
+            public void onFailure(Call<ApiResponse> call, Throwable t) {
                 // Handle API call failure
             }
         });
